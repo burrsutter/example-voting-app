@@ -1,22 +1,110 @@
-kubectl exec -it db-684b9b49fd-wt9hb -- /bin/bash
+kubectl create namespace stuff
+kubectl config set-context --current --namespace=stuff
+
+kubectl apply -f winter/redis.yaml
+
+stern redis
+
+redis-deployment-d894c6bfd-2qq7h redis 1:M 18 Apr 2022 17:32:45.562 # Server initialized
+redis-deployment-d894c6bfd-2qq7h redis 1:M 18 Apr 2022 17:32:45.563 * Ready to accept connections
+
+kubectl apply -f winter/voting.yaml
+
+IP=$(minikube ip)
+
+open http://$IP:30004
+
+https://www.screencast.com/t/6HuPNLRi85Y
+
+kubectl exec -it redis-deployment-d894c6bfd-2qq7h -- /bin/bash
+
+redis-cli INFO | grep ^db
+db0:keys=1,expires=0,avg_ttl=0
+
+redis-cli keys "*"
+1) "votes"
+
+redis-cli GET vote
+(nil)
+
+redis-cli
+lrange votes 0 10
+1) "{\"vote\": \"b\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+2) "{\"vote\": \"a\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+3) "{\"vote\": \"b\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+4) "{\"vote\": \"b\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+5) "{\"vote\": \"b\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+6) "{\"vote\": \"a\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+7) "{\"vote\": \"a\", \"voter_id\": \"950fcbc58d6a7931\"}"
+8) "{\"vote\": \"b\", \"voter_id\": \"ab32b2661c0b32d0\"}"
+
+kubectl apply -f winter/pv.yaml
+kubectl get pv
+NAME                 CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
+postgres-pv-volume   1Gi        RWO            Retain           Available                                   8s
+
+kubectl apply -f winter/pvc.yaml
+kubectl get pvc
+NAME                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+postgres-pvc-volume   Bound    pvc-2ae9b67b-6d7d-4e44-835d-c22f541e42e3   1Gi        RWO            standard       26s
+
+kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                       STORAGECLASS   REASON   AGE
+postgres-pv-volume                         1Gi        RWO            Retain           Available                                                       3m22s
+pvc-2ae9b67b-6d7d-4e44-835d-c22f541e42e3   1Gi        RWO            Delete           Bound       stuff/postgres-pvc-volume   standard                59s
+
+kubectl apply -f winter/secret.yaml
+
+kubectl apply -f winter/postgres.yaml
+
+cd woker 
+
+docker build -f Dockerfile.j -t docker.io/burrsutter/worker:java .
+docker push docker.io/burrsutter/worker:java
+
+kubectl apply -f winter/worker.yaml
+
+stern worker # looking for errors
+
+kubectl exec -it postgres-deployment-7d5647ff56-wlsss -- /bin/bash
 
 psql -h localhost -U postgres
 \l
 
-                                List of databases
    Name    |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges
 -----------+----------+----------+------------+------------+-----------------------
- postgres  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
- template0 | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
-           |          |          |            |            | postgres=CTc/postgres
- template1 | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
-           |          |          |            |            | postgres=CTc/postgres
+ postgres  | username | UTF8     | en_US.utf8 | en_US.utf8 |
+ template0 | username | UTF8     | en_US.utf8 | en_US.utf8 | =c/username          +
+           |          |          |            |            | username=CTc/username
+ template1 | username | UTF8     | en_US.utf8 | en_US.utf8 | =c/username          +
+           |          |          |            |            | username=CTc/username
+ username  | username | UTF8     | en_US.utf8 | en_US.utf8 |
+
 
 \c postgres
 
-You are now connected to database "postgres" as user "postgres".
-
 \dt
+         List of relations
+ Schema | Name  | Type  |  Owner
+--------+-------+-------+----------
+ public | votes | table | username
+(1 row)
+
+select * from votes;
+        id        | vote
+------------------+------
+ ab32b2661c0b32d0 | b
+ 950fcbc58d6a7931 | b
+
+\q
+
+kubectl apply -f winter/result.yaml
+
+
+
+
+
+
 
 
 

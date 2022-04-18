@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+  labels:
+    name: postgres-deployment
+    app: demo-voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-pod
+  template:
+    metadata:
+     labels:
+        app: postgres-pod
+    spec:
+     containers:
+       - name: postgres
+         image: postgres:9.4
+         env:
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: postgres-username
+          - name:  POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: postgres-password
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: trust
+         ports:
+          - containerPort: 5432
+         volumeMounts:
+          - mountPath: "/var/lib/postgresql/data"
+            name: postgres-pvc
+     volumes:
+      - name: postgres-pvc
+        persistentVolumeClaim:
+            claimName: postgres-pvc-volume
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  labels:
+    name: db-service
+    app: demo-voting-app
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+     app: postgres-pod
