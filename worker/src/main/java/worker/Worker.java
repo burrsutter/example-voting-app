@@ -11,7 +11,7 @@ class Worker {
       Jedis redis = connectToRedis("redis");
       Connection dbConn = connectToDB("db");
 
-      System.err.println("Watching vote queue");
+      System.out.println("Watching vote queue");
 
       while (true) {
         String voteJSON = redis.blpop(0, "votes").get(1);
@@ -19,7 +19,7 @@ class Worker {
         String voterID = voteData.getString("voter_id");
         String vote = voteData.getString("vote");
 
-        System.err.printf("Processing vote for '%s' by '%s'\n", vote, voterID);
+        System.out.printf("Processing vote for '%s' by '%s'\n", vote, voterID);
         updateVote(dbConn, voterID, vote);
       }
     } catch (SQLException e) {
@@ -53,12 +53,12 @@ class Worker {
         conn.keys("*");
         break;
       } catch (JedisConnectionException e) {
-        System.err.println("Waiting for redis");
+        System.out.println("Waiting for redis");
         sleep(1000);
       }
     }
 
-    System.err.println("Connected to redis");
+    System.out.println("Connected to redis");
     return conn;
   }
 
@@ -74,7 +74,8 @@ class Worker {
         try {
           conn = DriverManager.getConnection(url, "postgres", "postgres");
         } catch (SQLException e) {
-          System.err.println("Waiting for db");
+          System.out.print(e);
+          System.out.println("\n So waiting for postgres \n");
           sleep(1000);
         }
       }
@@ -88,7 +89,7 @@ class Worker {
       System.exit(1);
     }
 
-    System.err.println("Connected to db");
+    System.out.println("Connected to db");
     return conn;
   }
 
