@@ -7,6 +7,7 @@ import org.json.JSONObject;
 
 class Worker {
   public static void main(String[] args) {
+    System.out.println("Worker coming to life");
     try {
       Jedis redis = connectToRedis("redis");
       Connection dbConn = connectToDB("db");

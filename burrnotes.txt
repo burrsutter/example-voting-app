@@ -35,6 +35,8 @@ https://www.screencast.com/t/6HuPNLRi85Y
 
 kubectl exec -it redis-deployment-d894c6bfd-2qq7h -- /bin/bash
 
+kubectl exec -it $(kubectl get pods -l app=redis-pod -oname) -- /bin/bash
+
 redis-cli INFO | grep ^db
 db0:keys=1,expires=0,avg_ttl=0
 
@@ -76,14 +78,19 @@ kubectl apply -f winter/postgres.yaml
 
 cd woker 
 
-docker build -f Dockerfile.j -t docker.io/burrsutter/worker:java .
-docker push docker.io/burrsutter/worker:java
+docker build -f Dockerfile.j -t docker.io/burrsutter/worker:java.1 .
+docker login docker.io
+docker push docker.io/burrsutter/worker:java.1
 
 kubectl apply -f winter/worker.yaml
 
 stern worker # looking for errors
 
 kubectl exec -it postgres-deployment-7d5647ff56-wlsss -- /bin/bash
+
+or 
+
+kubectl exec -it $(kubectl get pods -l app=postgres-pod -oname) -- /bin/bash
 
 psql -h localhost -U postgres
 \l
